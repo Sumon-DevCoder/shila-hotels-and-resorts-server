@@ -46,6 +46,27 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const updatedDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // rooms collections apis routes
     app.get("/rooms", async (req, res) => {
       const result = await roomCollection.find().toArray();
@@ -60,6 +81,14 @@ async function run() {
     });
 
     // bookings collection apis route
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+
+      const query = { email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/bookings", async (req, res) => {
       const bookingItem = req.body;
 
@@ -72,6 +101,14 @@ async function run() {
       console.log(query, existsBookings);
 
       const result = await bookingCollection.insertOne(bookingItem);
+      res.send(result);
+    });
+
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
 
