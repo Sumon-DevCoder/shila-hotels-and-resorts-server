@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
 app.use(cors());
@@ -25,6 +25,7 @@ async function run() {
 
     const userCollection = client.db("ShilaHotelDB").collection("users");
     const roomCollection = client.db("ShilaHotelDB").collection("rooms");
+    const bookingCollection = client.db("ShilaHotelDB").collection("bookings");
 
     // users collection apis routes
     app.get("/users", async (req, res) => {
@@ -48,6 +49,29 @@ async function run() {
     // rooms collections apis routes
     app.get("/rooms", async (req, res) => {
       const result = await roomCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/rooms/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await roomCollection.findOne(query);
+      res.send(result);
+    });
+
+    // bookings collection apis route
+    app.post("/bookings", async (req, res) => {
+      const bookingItem = req.body;
+
+      const query = { room_id: bookingItem?.room_id };
+      const existsBookings = await bookingCollection.findOne(query);
+      if (existsBookings) {
+        return res.send({ message: "bookings already exists" });
+      }
+
+      console.log(query, existsBookings);
+
+      const result = await bookingCollection.insertOne(bookingItem);
       res.send(result);
     });
 
