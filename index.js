@@ -24,6 +24,13 @@ async function run() {
     // await client.db("admin").command({ ping: 1 });
 
     const userCollection = client.db("ShilaHotelDB").collection("users");
+    const roomCollection = client.db("ShilaHotelDB").collection("rooms");
+
+    // users collection apis routes
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     app.post("/users", async (req, res) => {
       const userData = req.body;
@@ -35,6 +42,12 @@ async function run() {
       }
 
       const result = await userCollection.insertOne(userData);
+      res.send(result);
+    });
+
+    // rooms collections apis routes
+    app.get("/rooms", async (req, res) => {
+      const result = await roomCollection.find().toArray();
       res.send(result);
     });
 
