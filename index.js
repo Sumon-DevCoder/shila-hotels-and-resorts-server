@@ -3,6 +3,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(
+  "sk_test_51P2oQm2KGXBhyorRorRhUWK23O4792oZBFkoG3VsRGxexPHFh9FFHBEqHiqrhUruHbLImYTDrNkP5m5ClkqolsMB00AIKpHYwY"
+);
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -27,6 +30,7 @@ async function run() {
     const userCollection = client.db("ShilaHotelDB").collection("users");
     const roomCollection = client.db("ShilaHotelDB").collection("rooms");
     const bookingCollection = client.db("ShilaHotelDB").collection("bookings");
+    const paymentCollection = client.db("ShilaHotelDB").collection("payments");
 
     // jwt apis related routes
     app.post("/jwt", async (req, res) => {
@@ -147,7 +151,7 @@ async function run() {
     });
 
     // bookings collection apis route
-    app.get("/bookings", verifyToken, async (req, res) => {
+    app.get("/bookings", async (req, res) => {
       const email = req.query.email;
 
       const query = { email };
@@ -177,6 +181,43 @@ async function run() {
       const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
+
+    // payment collection apis route
+    app.post("/payment", verifyToken, async (req, res) => {
+      const paymentInfo = req.body;
+      const paymentResult = await paymentCollection.insertOne(paymentInfo);
+
+      // delete carefully each ids
+      const query = {
+        _id: {
+          $in: paymentInfo.bookingIds?.map((id) => new ObjectId(id)),
+        },
+      };
+      const deletedResult = await bookingCollection.deleteMany(query);
+
+      res.send({ paymentResult, deletedResult });
+    });
+
+    // create payment intent
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+
+    
+
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
